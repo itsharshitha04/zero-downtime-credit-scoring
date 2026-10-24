@@ -1,0 +1,56 @@
+services:
+  blue:
+    build: .
+    image: credit-risk-scorer:local
+    container_name: credit-blue
+    environment:
+      MODEL_VERSION: ${BLUE_VERSION:-blue-v1}
+      STARTUP_DELAY_SECONDS: ${STARTUP_DELAY_SECONDS:-1}
+      MODEL_LOAD_FAIL: ${BLUE_MODEL_LOAD_FAIL:-false}
+    expose:
+      - "5000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/readyz', timeout=2)"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+      start_period: 2s
+    restart: unless-stopped
+    networks: [credit-net]
+
+  green:
+    build: .
+    image: credit-risk-scorer:local
+    container_name: credit-green
+    profiles: ["green"]
+    environment:
+      MODEL_VERSION: ${GREEN_VERSION:-green-v2}
+      STARTUP_DELAY_SECONDS: ${STARTUP_DELAY_SECONDS:-2}
+      MODEL_LOAD_FAIL: ${GREEN_MODEL_LOAD_FAIL:-false}
+    expose:
+      - "5000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/readyz', timeout=2)"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+      start_period: 2s
+    restart: unless-stopped
+    networks: [credit-net]
+
+  nginx:
+    image: nginx:1.28-alpine
+    container_name: credit-nginx
+    ports:
+      - "8081:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/active:/etc/nginx/conf.d:ro
+    depends_on:
+      - blue
+    restart: unless-stopped
+    networks: [credit-net]
+
+networks:
+  credit-net:
+    name: credit-risk-net

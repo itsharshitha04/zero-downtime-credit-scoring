@@ -1,0 +1,9 @@
+.env
+.active_color
+nginx/upstream.previous.conf
+traffic.log
+deployment-traffic.csv
+traffic-results.csv
+__pycache__/
+*.pyc
+.venv/
